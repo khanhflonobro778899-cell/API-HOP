@@ -8,7 +8,7 @@ app.use(express.json());
 let totalExecute = 0;
 let moonServers = new Map(); // Dùng Map để tự động ghi đè/cập nhật nếu trùng JobId
 
-// Endpoint tiếp nhận dữ liệu từ Roblox Script gửi lên
+// 1. Cổng tiếp nhận dữ liệu từ Roblox Tracker Script gửi lên
 app.post('/update-moon', (req, res) => {
     const { jobid, players } = req.body;
     
@@ -23,13 +23,21 @@ app.post('/update-moon', (req, res) => {
         "Players": players || 1,
         "jobid": jobid,
         "name": "Full Moon",
-        "updatedAt": Date.now() // Timestamp thời gian thực của năm 2026
+        "updatedAt": Date.now()
     });
 
     res.status(200).send("Cập nhật thành công!");
 });
 
-// Cơ chế dọn rác: Tự động xóa server khỏi danh sách sau 15 phút nếu không thấy cập nhật lại (Tránh giữ server đã sập)
+// 2. Cổng dành riêng cho Script Lua lấy dữ liệu về để Auto Hop Server
+app.get('/api', (req, res) => {
+    const moonDataArray = Array.from(moonServers.values());
+    res.json({
+        "moon_data": moonDataArray
+    });
+});
+
+// Cơ chế tự động xóa server khỏi danh sách sau 15 phút nếu không thấy cập nhật lại (Tránh server ảo/sập)
 setInterval(() => {
     const now = Date.now();
     for (let [jobid, data] of moonServers.entries()) {
@@ -37,20 +45,20 @@ setInterval(() => {
             moonServers.delete(jobid);
         }
     }
-}, 60000); // Quét dọn mỗi phút một lần
+}, 60000); // Quét dọn bộ nhớ mỗi phút một lần
 
-// Giao diện hiển thị trực quan (Khớp chính xác giao diện trong ảnh của bạn)
+// 3. Giao diện hiển thị trực quan (Nền tối + Nút toggle định dạng)
 app.get('/', (req, res) => {
     const moonDataArray = Array.from(moonServers.values());
     
     const finalData = {
         "Total Execute": totalExecute,
-        "by": "tungdepzai", // Thay tên bạn ở đây nha!
+        "by": "tranduykhanh",
         "total_moon_servers": moonDataArray.length,
         "moon_data": moonDataArray
     };
 
-    // Trả về HTML giao diện text/json có nút bấm toggle format
+    // Trả về mã nguồn HTML giao diện trực quan cho trình duyệt
     res.send(`
     <!DOCTYPE html>
     <html lang="vi">
@@ -103,10 +111,10 @@ app.get('/', (req, res) => {
                 }
             }
             
-            // Chạy render lần đầu
+            // Chạy kết xuất dữ liệu lần đầu
             renderJSON();
 
-            // Tự động tải lại trang sau mỗi 8 giây để cập nhật danh sách server mới nhất
+            // Tự động làm mới trang sau mỗi 8 giây để cập nhật server mới nhất
             setTimeout(() => {
                 location.reload();
             }, 8000);
@@ -119,4 +127,3 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Web đang chạy tại port ${PORT}`);
 });
-            
