@@ -8,41 +8,44 @@ app.use(express.json());
 let totalExecute = 0;
 let moonServers = new Map(); 
 
-// ĐÂY LÀ ID CỦA BLOX FRUITS SEA 3
-const SEA_3_PLACE_ID = "7449423635";
+// Tự động nhận diện tên Sea để hiển thị trên dữ liệu JSON cho đẹp
+function getSeaName(placeId) {
+    const id = String(placeId);
+    if (id === "2753915549") return "Full Moon Sea 1";
+    if (id === "4442272183") return "Full Moon Sea 2";
+    if (id === "7449423635") return "Full Moon Sea 3";
+    return `Full Moon (Place: ${id})`;
+}
 
-// 1. Cổng tiếp nhận dữ liệu từ Roblox Tracker Script gửi lên
+// 1. Cổng tiếp nhận dữ liệu từ tất cả các Sea gửi lên
 app.post('/update-moon', (req, res) => {
-    // Yêu cầu script tracker gửi lên cả jobId và placeId
+    console.log("➡️ [Web] Nhận yêu cầu POST từ Roblox:", req.body);
+
     const { jobid, players, placeId } = req.body;
     
     if (!jobid) {
+        console.log("❌ [Lỗi Web] Từ chối do thiếu JobId");
         return res.status(400).send("Thiếu JobId");
-    }
-
-    // BỘ LỌC SEA 3: So sánh chuẩn chuỗi để không bị lỗi từ chối oan
-    if (String(placeId) !== SEA_3_PLACE_ID) {
-        return res.status(403).send("Từ chối: Server này không phải Sea 3!");
     }
 
     totalExecute++; 
 
-    // Lưu chuẩn cấu trúc placeId và jobId để code Lua Auto Hop đọc mượt nhất
+    // Nhận toàn bộ và lưu chuẩn cấu trúc cho script Auto Hop nhặt về mượt nhất
     moonServers.set(jobid, {
-        "placeId": Number(SEA_3_PLACE_ID),
+        "placeId": Number(placeId) || 0,
         "jobId": jobid,
-        "players": players || 1,
-        "name": "Full Moon Sea 3",
+        "players": Number(players) || 1,
+        "name": getSeaName(placeId),
         "updatedAt": Date.now()
     });
 
-    res.status(200).send("Cập nhật thành công Server Sea 3!");
+    console.log(`✅ [Web] Đã nạp thành công Server mới! JobId: ${jobid} | Sea: ${placeId}`);
+    res.status(200).send("Cập nhật thành công Server!");
 });
 
 // 2. Cổng dành riêng cho Script Lua lấy dữ liệu về để Auto Hop
 app.get('/api', (req, res) => {
     const moonDataArray = Array.from(moonServers.values());
-    // Trả thẳng về dạng Array (Danh sách) để khớp hoàn hảo với script Lua
     res.json(moonDataArray);
 });
 
@@ -51,19 +54,20 @@ setInterval(() => {
     const now = Date.now();
     for (let [jobid, data] of moonServers.entries()) {
         if (now - data.updatedAt > 15 * 60 * 1000) { 
+            console.log(`🧹 [Web] Hết thời gian, xóa Server cũ: ${jobid}`);
             moonServers.delete(jobid);
         }
     }
 }, 60000); 
 
-// 3. Giao diện hiển thị trực quan cho Trình duyệt
+// 3. Giao diện hiển thị gốc (Đã cập nhật hiển thị All Seas)
 app.get('/', (req, res) => {
     const moonDataArray = Array.from(moonServers.values());
     
     const finalData = {
         "Total Execute": totalExecute,
         "by": "tranduykhanh",
-        "sea_filter": "Only Sea 3 (7449423635)",
+        "sea_filter": "All Seas (No Filter)",
         "total_moon_servers": moonDataArray.length,
         "moon_data": moonDataArray
     };
@@ -74,7 +78,7 @@ app.get('/', (req, res) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Moon Server Tracker - Sea 3</title>
+        <title>Moon Server Tracker - All New</title>
         <style>
             body {
                 background-color: #121212;
@@ -133,6 +137,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Web đang chạy tại port ${PORT} - Chỉ nhận Sea 3`);
+    console.log(`🚀 Web đang chạy tại port ${PORT} - Nhận mọi dữ liệu Server`);
 });
-
