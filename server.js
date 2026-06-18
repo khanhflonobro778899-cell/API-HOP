@@ -20,7 +20,7 @@ app.post('/update-moon', (req, res) => {
         return res.status(400).send("Thiếu JobId");
     }
 
-    // BỘ LỌC SEA 3: Nếu placeId gửi lên không phải Sea 3 thì bỏ qua ngay lập tức
+    // BỘ LỌC SEA 3: So sánh chuẩn chuỗi để không bị lỗi từ chối oan
     if (String(placeId) !== SEA_3_PLACE_ID) {
         return res.status(403).send("Từ chối: Server này không phải Sea 3!");
     }
@@ -135,3 +135,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Web đang chạy tại port ${PORT} - Chỉ nhận Sea 3`);
 });
+
